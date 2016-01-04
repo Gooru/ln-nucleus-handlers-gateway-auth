@@ -1,0 +1,11 @@
+{
+  "comment" : "This is bundled JSON file. Idea is that we should externalize this also as part of build. Currently this is going to hold the dev env information",
+  "redisConfig" : {
+    "host" : "localhost",
+    "port" : 6379,
+    "encoding" : "UTF-8",
+    "tcpKeepAlive" : true,
+    "tcpNoDelay" : true
+  },
+  "sessionTimeoutInSeconds": 3600
+}

@@ -1,0 +1,70 @@
+import java.lang.invoke.LambdaForm.Compiled;
+
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.2"
+    }
+}
+
+plugins {
+    id 'java' // or 'groovy' Must be explicitly applied
+    id 'com.github.johnrengelman.shadow' version "1.2.2"
+}
+
+defaultTasks 'shadowJar'
+
+if (!JavaVersion.current().java8Compatible) {
+    throw new IllegalStateException('''Nucleus:
+                                      |  This needs Java 8,
+                                      |  You are using something else,
+                                      |  Refresh. Try again.'''.stripMargin())
+}
+
+// Define a version registry so that we can avoid hard coding of the version numbers
+// Note that this applies only to dependencies and not to the plugins and build
+ext {
+    vertxVersion = '3.1.0'
+    slf4jVersion ='1.7.12'
+    junitVersion = '4.12'
+    logbackVersion = '1.0.13'
+}
+
+version = "0.1-snapshot"
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'http://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+dependencies {
+    // Vertx specific dependencies
+    compile "io.vertx:vertx-core:${vertxVersion}"
+    compile "io.vertx:vertx-hazelcast:${vertxVersion}"
+
+    // Other dependencies
+    compile "ch.qos.logback:logback-classic:${logbackVersion}"
+    compile "io.vertx:vertx-redis-client:${vertxVersion}"
+
+
+    // Test dependencies
+    testCompile "junit:junit:${junitVersion}"
+}
+
+shadowJar {
+    classifier = 'fat'
+    manifest {
+        attributes 'Main-Class': 'io.vertx.core.Launcher'
+        attributes 'Main-Verticle': 'org.gooru.nucleus.handlers.auth.bootstrap.AuthVerticle'
+        attributes 'Created-By' : 'Gooru.org'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.7'
+}
+
