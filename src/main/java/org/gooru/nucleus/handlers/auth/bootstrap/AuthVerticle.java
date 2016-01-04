@@ -9,6 +9,9 @@ import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisOptions;
 import org.gooru.nucleus.handlers.auth.constants.MessageConstants;
 import org.gooru.nucleus.handlers.auth.constants.MessagebusEndpoints;
+import org.gooru.nucleus.handlers.auth.processors.MessageProcessorBuilder;
+import org.gooru.nucleus.handlers.auth.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.auth.responses.MessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,59 +23,35 @@ public class AuthVerticle extends AbstractVerticle {
   @Override
   public void start(Future<Void> startFuture) throws Exception {
     EventBus eb = vertx.eventBus();
+
     initializeVerticle(startFuture);
 
     if (startFuture.failed()) {
       return;
     }
     eb.consumer(MessagebusEndpoints.MBEP_AUTH, message -> {
-
-      String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);
-      String sessionToken = message.headers().get(MessageConstants.MSG_HEADER_TOKEN);
-      final DeliveryOptions deliveryOptions = new DeliveryOptions();
-      int sessionTimeout = config().getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY);
-
-      if (sessionToken != null && !sessionToken.isEmpty()) {
-        if (msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH_WITH_PREFS)) {
-          redisClient.get(sessionToken, redisGetAsyncHandler -> {
-            JsonObject result = null;
-            if (redisGetAsyncHandler.succeeded()) {
-              if (redisGetAsyncHandler.result() != null) {
-                result = new JsonObject(redisGetAsyncHandler.result());
-                deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_SUCCESS);
-                redisClient.expire(sessionToken, sessionTimeout, updateHandler -> {
-                  if (updateHandler.succeeded()) {
-                    LOGGER.debug("expiry time of session {} is updated", sessionToken);
-                  } else {
-                    LOGGER.warn("Not able to update expiry for key {}", sessionToken, updateHandler.cause());
-                  }
-                });
-              } else {
-                LOGGER.info("Session not found. Invalid session");
-                deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_ERROR);
-              }
-            } else {
-              LOGGER.error("Redis operation failed", redisGetAsyncHandler.cause());
-              deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_ERROR);
-            }
-            message.reply(result, deliveryOptions);
-          });
-        }
-      } else {
-        LOGGER.error("Unable to authorize. Invalid authorization header");
-        deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_ERROR);
-        message.reply(new JsonObject(), deliveryOptions);
-      }
-    }).completionHandler(result -> {
-        if (result.succeeded()) {
-          LOGGER.info("Auth end point ready to listen");
-          startFuture.complete();
+      LOGGER.debug("Received message : {}", message.body());
+      ProcessorContext pc = ProcessorContext.build(vertx, redisClient, message, config());
+      vertx.executeBlocking(blockingFuture -> {
+        new MessageProcessorBuilder().buildDefaultProcessor(pc).process(blockingFuture);
+      }, asyncResult -> {
+        if (asyncResult.succeeded()) {
+          MessageResponse response = (MessageResponse) asyncResult.result();
+          message.reply(response.getMessage(), response.getDeliveryOptions());
         } else {
-          LOGGER.error("Error registering the auth handler. Halting the auth machinery");
-          startFuture.fail("Error registering the auth handler. Halting the auth machinery");
-          Runtime.getRuntime().halt(1);
+          LOGGER.error("Auth processing failed");
         }
       });
+    }).completionHandler(result -> {
+      if (result.succeeded()) {
+        LOGGER.info("Auth end point ready to listen");
+        startFuture.complete();
+      } else {
+        LOGGER.error("Error registering the auth handler. Halting the auth machinery");
+        startFuture.fail("Error registering the auth handler. Halting the auth machinery");
+        Runtime.getRuntime().halt(1);
+      }
+    });
   }
 
   @Override
