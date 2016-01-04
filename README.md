@@ -9,9 +9,8 @@ This project contains just one main verticle which is responsible for listening 
 
 TODO
 ----
-* Provide Verticle to listen to auth request
-* Validate the request with Redis
-* Provide the response in pre defined format
+* If need arises, then provide a response transformer
+* If performance is getting impacted, move the expiry update to a worker verticle
 
 To understand build related stuff, take a look at **BUILD_README.md**.
 
