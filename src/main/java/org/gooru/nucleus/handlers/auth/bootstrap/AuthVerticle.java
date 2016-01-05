@@ -61,7 +61,7 @@ public class AuthVerticle extends AbstractVerticle {
 
   private void initializeVerticle(Future<Void> startFuture) {
     try {
-    JsonObject configuration = config().getJsonObject(MessageConstants.COFIG_REDIS_CONFIGURATION_KEY);
+    JsonObject configuration = config().getJsonObject(MessageConstants.CONFIG_REDIS_CONFIGURATION_KEY);
     RedisOptions options = new RedisOptions(configuration);
     redisClient = RedisClient.create(vertx, options);
       redisClient.get("NonExistingKey", initHandler -> {

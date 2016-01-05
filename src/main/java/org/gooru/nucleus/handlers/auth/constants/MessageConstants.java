@@ -22,5 +22,5 @@ public class MessageConstants {
   public static final String RESP_CONTAINER_MBUS = "mb.container";
 
   public static final String CONFIG_SESSION_TIMEOUT_KEY = "sessionTimeoutInSeconds";
-  public static final String COFIG_REDIS_CONFIGURATION_KEY = "redisConfig";
+  public static final String CONFIG_REDIS_CONFIGURATION_KEY = "redisConfig";
 }
