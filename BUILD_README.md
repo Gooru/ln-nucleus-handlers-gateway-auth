@@ -19,7 +19,7 @@ Following command could be used, from the base directory.
 
 Note that any options that need to be passed onto Vertx instance need to be passed at command line e.g, worker pool size etc
 
-> java -classpath ./build/libs/nucleus-auth-0.1-snapshot-fat.jar: -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory io.vertx.core.Launcher -conf src/main/resources/nucleus-auth.json -cluster -instances 4
+> java -classpath ./build/libs/nucleus-handlers-gateway-auth-0.1-snapshot-fat.jar: -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory io.vertx.core.Launcher -conf src/main/resources/nucleus-auth.json -cluster -instances 4
 
 The project already has dependency for hazelcast included. Currently, there is no cluster specific configuration done. That needs to be included in real deployment.
 
