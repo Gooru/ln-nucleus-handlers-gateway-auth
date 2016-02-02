@@ -11,7 +11,7 @@ public class MessageConstants {
   public static final String MSG_OP_STATUS_ERROR = "error";
   public static final String MSG_OP_STATUS_VALIDATION_ERROR = "error.validation.";
   public static final String MSG_USER_ANONYMOUS = "anonymous";
-  public static final String MSG_USER_ID = "userId";
+  public static final String MSG_USER_ID = "user_id";
   public static final String MSG_HTTP_STATUS = "http.status";
   public static final String MSG_HTTP_BODY = "http.body";
   public static final String MSG_HTTP_RESPONSE = "http.response";
