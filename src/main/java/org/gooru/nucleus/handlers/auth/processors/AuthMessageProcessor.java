@@ -35,14 +35,15 @@ class AuthMessageProcessor implements MessageProcessor {
     final DeliveryOptions deliveryOptions = new DeliveryOptions();
     int sessionTimeout = config.getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY);
 
-    LOGGER.debug("Starting processing of auth request in processor");
+    LOGGER.debug("Starting processing of auth request in processor for token: '{}", sessionToken);
     if (sessionToken != null && !sessionToken.isEmpty()) {
-      LOGGER.debug("Session token : {}", sessionToken);
       if (msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH_WITH_PREFS)) {
         redisClient.get(sessionToken, redisAsyncResult -> {
           JsonObject jsonResult = null;
           if (redisAsyncResult.succeeded()) {
+            LOGGER.debug("Communication with redis done without exception");
             final String redisResult = redisAsyncResult.result();
+            LOGGER.debug("Redis responded with '{}'", redisResult);
             if (redisResult != null) {
               processSuccess(deliveryOptions, future, redisResult);
               // Happening asynchronously, we do not delay sending response

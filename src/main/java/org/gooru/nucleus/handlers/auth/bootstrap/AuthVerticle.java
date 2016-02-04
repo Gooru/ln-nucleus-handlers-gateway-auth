@@ -29,7 +29,6 @@ public class AuthVerticle extends AbstractVerticle {
       return;
     }
     eb.consumer(MessagebusEndpoints.MBEP_AUTH, message -> {
-      LOGGER.debug("Received message : {}", message.body());
       ProcessorContext pc = ProcessorContext.build(vertx, redisClient, message, config());
       vertx.executeBlocking(blockingFuture -> MessageProcessorBuilder.buildDefaultProcessor(pc).process(blockingFuture), asyncResult -> {
         if (asyncResult.succeeded()) {
