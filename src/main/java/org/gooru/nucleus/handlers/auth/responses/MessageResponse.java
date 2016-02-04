@@ -15,18 +15,18 @@ public class MessageResponse {
     message = messageBody;
   }
 
+  public static MessageResponse build(DeliveryOptions options, JsonObject message) {
+    if (options == null) {
+      throw new IllegalArgumentException("MessageResponse can't be created with invalid options");
+    }
+    return new MessageResponse(options, message);
+  }
+
   public DeliveryOptions getDeliveryOptions() {
     return deliveryOptions;
   }
 
   public JsonObject getMessage() {
     return message;
-  }
-
-  public static MessageResponse build(DeliveryOptions options, JsonObject message) {
-    if (options == null) {
-      throw new IllegalArgumentException("MessageResponse can't be created with invalid options");
-    }
-    return new MessageResponse(options, message);
   }
 }

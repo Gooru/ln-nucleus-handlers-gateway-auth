@@ -14,6 +14,21 @@ public class ProcessorContext {
   private final Message message;
   private final JsonObject config;
 
+  private ProcessorContext(final Vertx vertx, RedisClient redisClient, final Message message, final JsonObject config) {
+    this.vertx = vertx;
+    this.redisClient = redisClient;
+    this.message = message;
+    this.config = config;
+  }
+
+  public static ProcessorContext build(final Vertx vertx, RedisClient redisClient, final Message message, final JsonObject config) {
+
+    if (vertx == null || redisClient == null || message == null || config == null) {
+      throw new IllegalArgumentException("ProcessorContext can't be created with invalid or null values");
+    }
+    return new ProcessorContext(vertx, redisClient, message, config);
+  }
+
   public Vertx vertx() {
     return this.vertx;
   }
@@ -28,22 +43,5 @@ public class ProcessorContext {
 
   public JsonObject config() {
     return this.config;
-  }
-
-  private ProcessorContext(final Vertx vertx, RedisClient redisClient, final Message message,
-                           final JsonObject config) {
-    this.vertx = vertx;
-    this.redisClient = redisClient;
-    this.message = message;
-    this.config = config;
-  }
-
-  public static ProcessorContext build(final Vertx vertx, RedisClient redisClient, final Message message,
-                                final JsonObject config) {
-
-    if (vertx == null || redisClient == null || message == null || config == null) {
-      throw new IllegalArgumentException("ProcessorContext can't be created with invalid or null values");
-    }
-    return new ProcessorContext(vertx, redisClient, message, config);
   }
 }

@@ -2,7 +2,6 @@ package org.gooru.nucleus.handlers.auth.bootstrap;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
@@ -17,8 +16,8 @@ import org.slf4j.LoggerFactory;
 
 public class AuthVerticle extends AbstractVerticle {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(AuthVerticle.class);
-  RedisClient redisClient;
+  private static final Logger LOGGER = LoggerFactory.getLogger(AuthVerticle.class);
+  private RedisClient redisClient;
 
   @Override
   public void start(Future<Void> startFuture) throws Exception {
@@ -32,9 +31,7 @@ public class AuthVerticle extends AbstractVerticle {
     eb.consumer(MessagebusEndpoints.MBEP_AUTH, message -> {
       LOGGER.debug("Received message : {}", message.body());
       ProcessorContext pc = ProcessorContext.build(vertx, redisClient, message, config());
-      vertx.executeBlocking(blockingFuture -> {
-        new MessageProcessorBuilder().buildDefaultProcessor(pc).process(blockingFuture);
-      }, asyncResult -> {
+      vertx.executeBlocking(blockingFuture -> MessageProcessorBuilder.buildDefaultProcessor(pc).process(blockingFuture), asyncResult -> {
         if (asyncResult.succeeded()) {
           MessageResponse response = (MessageResponse) asyncResult.result();
           message.reply(response.getMessage(), response.getDeliveryOptions());
@@ -61,9 +58,9 @@ public class AuthVerticle extends AbstractVerticle {
 
   private void initializeVerticle(Future<Void> startFuture) {
     try {
-    JsonObject configuration = config().getJsonObject(MessageConstants.CONFIG_REDIS_CONFIGURATION_KEY);
-    RedisOptions options = new RedisOptions(configuration);
-    redisClient = RedisClient.create(vertx, options);
+      JsonObject configuration = config().getJsonObject(MessageConstants.CONFIG_REDIS_CONFIGURATION_KEY);
+      RedisOptions options = new RedisOptions(configuration);
+      redisClient = RedisClient.create(vertx, options);
       redisClient.get("NonExistingKey", initHandler -> {
         if (initHandler.succeeded()) {
           LOGGER.info("Initial connection check with Redis done");

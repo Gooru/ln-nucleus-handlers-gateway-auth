@@ -1,7 +1,6 @@
 package org.gooru.nucleus.handlers.auth.processors;
 
 import io.vertx.core.Future;
-import org.gooru.nucleus.handlers.auth.responses.MessageResponse;
 
 /**
  * Created by ashish on 4/1/16.
