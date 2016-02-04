@@ -33,7 +33,7 @@ This verticle handles authorization for all requests coming on /api/nucleus/*. I
 
 Once you started redis server, go to command line and type 'redis-cli' to login to redis. Then execute below command to insert session token. 
 
-> set fbc9d5b6-ad22-11e5-9250-f8a963065976 '{"userId":"fbc9d5b6-ad22-11e5-9250-f8a963065976","userName":"gooru","prefs":{"default_subject_code":"GUT.M","standard_framework_code":"CSS"},"provided_at":"1450078474078","client_id":"df138e62-ad23-11e5-9250-f8a963065976"}' EX 3600
+> set fbc9d5b6-ad22-11e5-9250-f8a963065976 '{"user_id":"a58c8597-31b5-4a44-af93-d44016426582","username":"my-user-name","client_id":"ba956a97-ae15-11e5-a302-f8a963065976","provided_at":1454478312796,"prefs":{"taxonomy":[{"standard_framework_code":"CSS","default_subject_code":"GUT.M"}]},"cdn_urls":{"profile.cdn":"//profile.gooru.org.com"},"access_token_validity":86400}' EX 3600
 
 Syntax for above command is -> set [session-token] [value] EX [expiry-time]
 
