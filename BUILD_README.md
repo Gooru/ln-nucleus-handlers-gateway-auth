@@ -1,4 +1,4 @@
-Building nucleus-auth
+Building nucleus-handlers-gateway-auth
 ==============
 
 ## Prerequisites
