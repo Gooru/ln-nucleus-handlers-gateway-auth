@@ -5,11 +5,11 @@ package org.gooru.nucleus.handlers.auth.processors;
  */
 public final class MessageProcessorBuilder {
 
-  private MessageProcessorBuilder() {
-    throw new AssertionError();
-  }
+    private MessageProcessorBuilder() {
+        throw new AssertionError();
+    }
 
-  public static MessageProcessor buildDefaultProcessor(ProcessorContext pc) {
-    return new AuthMessageProcessor(pc);
-  }
+    public static MessageProcessor buildDefaultProcessor(ProcessorContext pc) {
+        return new AuthMessageProcessor(pc);
+    }
 }
