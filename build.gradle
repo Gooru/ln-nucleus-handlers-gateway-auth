@@ -12,6 +12,13 @@ plugins {
     id 'com.github.johnrengelman.shadow' version "1.2.2"
 }
 
+
+def localBuildFile = "./build-local.gradle"
+def useLocalBuild = new File(localBuildFile).exists()
+if (useLocalBuild) {
+    apply from : localBuildFile
+}
+
 defaultTasks 'shadowJar'
 
 if (!JavaVersion.current().java8Compatible) {
