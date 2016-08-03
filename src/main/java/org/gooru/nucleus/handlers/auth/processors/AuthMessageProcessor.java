@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
@@ -46,10 +47,15 @@ class AuthMessageProcessor implements MessageProcessor {
                         final String redisResult = redisAsyncResult.result();
                         LOGGER.debug("Redis responded with '{}'", redisResult);
                         if (redisResult != null) {
-                            processSuccess(deliveryOptions, future, redisResult);
-                            // Happening asynchronously, we do not delay sending
-                            // response
-                            renewSessionTokenExpiry(vertx, redisClient, sessionToken, sessionTimeout);
+                            try {
+                                processSuccess(deliveryOptions, future, redisResult);
+                                // Happening asynchronously, we do not delay sending
+                                // response
+                                renewSessionTokenExpiry(vertx, redisClient, sessionToken, sessionTimeout);
+                            } catch (DecodeException de) {
+                                LOGGER.error("exception while decoding json", de);
+                                processFailure(deliveryOptions, future);
+                            }
                         } else {
                             LOGGER.info("Session not found. Invalid session");
                             processFailure(deliveryOptions, future);
