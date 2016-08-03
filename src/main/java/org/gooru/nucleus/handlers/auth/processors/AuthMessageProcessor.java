@@ -53,7 +53,7 @@ class AuthMessageProcessor implements MessageProcessor {
                                 // response
                                 renewSessionTokenExpiry(vertx, redisClient, sessionToken, sessionTimeout);
                             } catch (DecodeException de) {
-                                LOGGER.error("exception while decoding json", de);
+                                LOGGER.error("exception while decoding json for token '{}'", sessionToken, de);
                                 processFailure(deliveryOptions, future);
                             }
                         } else {
