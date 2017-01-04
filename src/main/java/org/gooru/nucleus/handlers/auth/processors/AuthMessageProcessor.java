@@ -39,7 +39,7 @@ class AuthMessageProcessor implements MessageProcessor {
 
         LOGGER.debug("Starting processing of auth request in processor for token: '{}", sessionToken);
         if (sessionToken != null && !sessionToken.isEmpty()) {
-            if (msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH_WITH_PREFS)) {
+            if (msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH)) {
                 redisClient.get(sessionToken, redisAsyncResult -> {
                     JsonObject jsonResult = null;
                     if (redisAsyncResult.succeeded()) {
