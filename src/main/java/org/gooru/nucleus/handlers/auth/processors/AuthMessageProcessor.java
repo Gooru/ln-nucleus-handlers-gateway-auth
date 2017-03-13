@@ -20,85 +20,101 @@ class AuthMessageProcessor implements MessageProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProcessor.class);
     private final ProcessorContext processorContext;
+    private Future<MessageResponse> future;
+    private DeliveryOptions deliveryOptions;
 
     AuthMessageProcessor(ProcessorContext pc) {
         this.processorContext = pc;
     }
 
     @Override
-    public void process(Future<Object> future) {
-        Message message = processorContext.message();
+    public void process(Future<MessageResponse> completionFuture) {
+        Message<JsonObject> message = processorContext.message();
         Vertx vertx = processorContext.vertx();
         RedisClient redisClient = processorContext.redisClient();
         JsonObject config = processorContext.config();
+        this.future = completionFuture;
 
-        String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);
         String sessionToken = message.headers().get(MessageConstants.MSG_HEADER_TOKEN);
-        final DeliveryOptions deliveryOptions = new DeliveryOptions();
-        int sessionTimeout = config.getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY);
+        deliveryOptions = new DeliveryOptions();
 
         LOGGER.debug("Starting processing of auth request in processor for token: '{}", sessionToken);
-        if (sessionToken != null && !sessionToken.isEmpty()) {
-            if (msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH)) {
-                redisClient.get(sessionToken, redisAsyncResult -> {
-                    JsonObject jsonResult = null;
-                    if (redisAsyncResult.succeeded()) {
-                        LOGGER.debug("Communication with redis done without exception");
-                        final String redisResult = redisAsyncResult.result();
-                        LOGGER.debug("Redis responded with '{}'", redisResult);
-                        if (redisResult != null) {
-                            try {
-                                processSuccess(deliveryOptions, future, redisResult);
-                                // Happening asynchronously, we do not delay sending
-                                // response
-                                renewSessionTokenExpiry(vertx, redisClient, sessionToken, sessionTimeout);
-                            } catch (DecodeException de) {
-                                LOGGER.error("exception while decoding json for token '{}'", sessionToken, de);
-                                processFailure(deliveryOptions, future);
-                            }
-                        } else {
-                            LOGGER.info("Session not found. Invalid session");
-                            processFailure(deliveryOptions, future);
+        try {
+            validateSessionToken();
+            validateOperation();
+            redisClient.get(sessionToken, redisAsyncResult -> {
+                if (redisAsyncResult.succeeded()) {
+                    LOGGER.debug("Communication with redis done without exception");
+                    final String redisResult = redisAsyncResult.result();
+                    LOGGER.debug("Redis responded with '{}'", redisResult);
+                    if (redisResult != null) {
+                        try {
+                            processSuccess(redisResult);
+                            // Happening asynchronously, we do not delay sending response
+                            renewSessionTokenExpiry(sessionToken);
+                        } catch (DecodeException de) {
+                            LOGGER.error("exception while decoding json for token '{}'", sessionToken, de);
+                            processFailure();
                         }
                     } else {
-                        LOGGER.error("Redis operation failed", redisAsyncResult.cause());
-                        processFailure(deliveryOptions, future);
+                        LOGGER.info("Session not found. Invalid session");
+                        processFailure();
                     }
-                });
-            } else {
-                LOGGER.error("Invalid command. System does not understand it");
-                processFailure(deliveryOptions, future);
-            }
-        } else {
-            LOGGER.error("Unable to authorize. Invalid authorization header");
-            processFailure(deliveryOptions, future);
+                } else {
+                    LOGGER.error("Redis operation failed", redisAsyncResult.cause());
+                    processFailure();
+                }
+            });
+        } catch (ProcessorException e) {
+            LOGGER.error("Processing exception, will fail auth");
+            processFailure();
+        }
+
+    }
+
+    private void validateOperation() {
+        String msgOp = processorContext.message().headers().get(MessageConstants.MSG_HEADER_OP);
+        if (!msgOp.equalsIgnoreCase(MessageConstants.MSG_OP_AUTH)) {
+            LOGGER.error("Invalid command. System does not understand it");
+            throw new ProcessorException();
         }
     }
 
-    private void processSuccess(DeliveryOptions deliveryOptions, Future<Object> future, String redisResult) {
-        JsonObject jsonResult;
-        jsonResult = new JsonObject(redisResult);
-        // If need arises, this is where we shall be doing response
-        // transformation
-        deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_SUCCESS);
-        MessageResponse response = MessageResponse.build(deliveryOptions, jsonResult);
-        future.complete(response);
+    private void validateSessionToken() {
+        String sessionToken = processorContext.message().headers().get(MessageConstants.MSG_HEADER_TOKEN);
+        if (sessionToken == null || sessionToken.isEmpty()) {
+            LOGGER.error("Unable to authorize. Invalid authorization header");
+            throw new ProcessorException();
+        }
     }
 
-    private void renewSessionTokenExpiry(Vertx vertx, RedisClient redisClient, String sessionToken,
-        int sessionTimeout) {
-        redisClient.expire(sessionToken, sessionTimeout, updateHandler -> {
+    private void processSuccess(String redisResult) {
+        JsonObject jsonResult;
+        jsonResult = new JsonObject(redisResult);
+        // If need arises, this is where we shall be doing response transformation
+        deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_SUCCESS);
+        MessageResponse response = MessageResponse.build(deliveryOptions, jsonResult);
+        this.future.complete(response);
+    }
+
+    private void renewSessionTokenExpiry(String sessionToken) {
+        int sessionTimeout = processorContext.config().getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY);
+        this.processorContext.expiryUpdaterRedisClient().<Long>expire(sessionToken, sessionTimeout, updateHandler -> {
             if (updateHandler.succeeded()) {
-                LOGGER.debug("expiry time of session {} is updated", sessionToken);
+                LOGGER.debug("expiry time of session {} is updated, result : {}", sessionToken, updateHandler.result());
             } else {
                 LOGGER.warn("Not able to update expiry for key {}", sessionToken, updateHandler.cause());
             }
         });
     }
 
-    private void processFailure(DeliveryOptions deliveryOptions, Future<Object> future) {
+    private void processFailure() {
         deliveryOptions.addHeader(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_ERROR);
         MessageResponse response = MessageResponse.build(deliveryOptions, new JsonObject());
-        future.complete(response);
+        this.future.complete(response);
     }
+
+    private static class ProcessorException extends RuntimeException {
+    }
+
 }
