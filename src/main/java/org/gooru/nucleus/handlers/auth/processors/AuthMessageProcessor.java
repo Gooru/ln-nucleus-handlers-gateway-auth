@@ -51,7 +51,7 @@ class AuthMessageProcessor implements MessageProcessor {
                         try {
                             processSuccess(redisResult);
                             // Happening asynchronously, we do not delay sending response
-                            renewSessionTokenExpiry(sessionToken);
+                            renewSessionTokenExpiry(sessionToken, getTokenExpiry(redisResult));
                         } catch (DecodeException de) {
                             LOGGER.error("exception while decoding json for token '{}'", sessionToken, de);
                             processFailure();
@@ -97,8 +97,7 @@ class AuthMessageProcessor implements MessageProcessor {
         this.future.complete(response);
     }
 
-    private void renewSessionTokenExpiry(String sessionToken) {
-        int sessionTimeout = processorContext.config().getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY);
+    private void renewSessionTokenExpiry(String sessionToken, int sessionTimeout) {
         this.processorContext.expiryUpdaterRedisClient().<Long>expire(sessionToken, sessionTimeout, updateHandler -> {
             if (updateHandler.succeeded()) {
                 LOGGER.debug("expiry time of session {} is updated, result : {}", sessionToken, updateHandler.result());
@@ -114,6 +113,12 @@ class AuthMessageProcessor implements MessageProcessor {
         this.future.complete(response);
     }
 
+    private int getTokenExpiry(String redisPacket) {
+        JsonObject packet = new JsonObject(redisPacket);
+        return packet.getInteger(MessageConstants.ACCESS_TOKEN_VALIDITY,
+            processorContext.config().getInteger(MessageConstants.CONFIG_SESSION_TIMEOUT_KEY));
+    }
+    
     private static class ProcessorException extends RuntimeException {
     }
 
