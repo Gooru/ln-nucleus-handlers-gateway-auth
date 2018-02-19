@@ -7,5 +7,5 @@
     "tcpKeepAlive" : true,
     "tcpNoDelay" : true
   },
-  "sessionTimeoutInSeconds": 3600
+  "sessionTimeoutInSeconds": 28800
 }
