@@ -2,14 +2,11 @@ import java.lang.invoke.LambdaForm.Compiled;
 
 buildscript {
     repositories { jcenter() }
-    dependencies {
-        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.2"
-    }
 }
 
 plugins {
     id 'java' // or 'groovy' Must be explicitly applied
-    id 'com.github.johnrengelman.shadow' version "1.2.2"
+    id 'com.github.johnrengelman.shadow' version "2.0.2"
 }
 
 
@@ -72,6 +69,6 @@ shadowJar {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.7'
+    gradleVersion = '4.4'
 }
 
